@@ -1,28 +1,50 @@
-import react from 'react';
-import './CartItem.css'
+import React from 'react';
+import './cartItem.css';
 
-class CartItem extends react.Component {
-    render(){
-        const product = this.props.product;
-        return( 
+const CartItem = (props) => {
+    const { price, title, qty } = props.product;
+    const {
+        product,
+        onIncreaseQuantity,
+        onDecreaseQuantity,
+        onDeleteProduct
+    } = props;
+    return (
+        <div className="cart-item">
+            <div className="left-block">
+                <img style={styles.image} src={product.img} alt='' />
+            </div>
+            <div className="right-block">
+                <div style={{ fontSize: 25 }}>{title}</div>
+                <div style={{ color: '#777' }}>Rs {price} </div>
+                <div style={{ color: '#777' }}>Qty: {qty} </div>
 
-            <div className='cartItem'>
-                <div className='product-name'>
-                    <h2>{product.name}</h2>
+                <div className="cart-item-actions">
+                     
+                    <div onClick={() => onIncreaseQuantity(product)}>
+                        <i className="fa-solid fa-circle-plus" ></i>
+                    </div>
+
+                    <div onClick={() => onDecreaseQuantity(product)}>
+                        <i className="fa-solid fa-circle-minus"></i>
+                    </div>
+
+                    <div onClick={() => onDeleteProduct(product.id)}>
+                        <i className="fa-solid fa-trash-can"></i>
+                    </div>
+
                 </div>
+            </div>
+        </div>
+    );
+}
 
-                <div className='product-qty'>
-                    <h2>{product.qty}</h2>
-                </div>
-
-                <div className='icons-container'>
-                    <div onClick={()=>this.props.increaseQty(product)} className='icons'><i className="fa-solid fa-circle-plus"></i></div>
-                    <div className='icons' onClick={()=>{this.props.decreaseQty(product)}}><i className="fa-solid fa-circle-minus"></i></div>
-                    <div className='icons' onClick={()=>{this.props.deleteProduct(product.id)}}><i className="fa-solid fa-trash"></i> </div> 
-                </div>
-                  
-            </div> 
-        )
+const styles = {
+    image: {
+        height: 110,
+        width: 110,
+        borderRadius: 4,
+        background: '#ccc'
     }
 }
 
