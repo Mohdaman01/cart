@@ -1,40 +1,70 @@
 import React from 'react';
 import Cart from './cart';
 import Navbar from './Navbar';
+import { getFirestore, collection} from 'firebase/firestore';
+// import {getDocs, doc} from 'firebase/firestore'
+import {onSnapshot, query} from 'firebase/firestore';
+import {app} from './index';
 
 class App extends React.Component {
 
-  constructor () {
+  constructor() {
     super();
     this.state = {
-      products: [
-        {
-          price: 99,
-          title: 'Watch',
-          qty: 1,
-          img: 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=634&q=80',
-          id: 1
-        },
-        {
-          price: 999,
-          title: 'Mobile Phone',
-          qty: 10,
-          img: 'https://images.unsplash.com/photo-1520923642038-b4259acecbd7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1306&q=80',
-          id: 2
-        },
-        {
-          price: 999,
-          title: 'Laptop',
-          qty: 4,
-          img: 'https://images.unsplash.com/photo-1504707748692-419802cf939d?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1330&q=80',
-          id: 3
-        }
-      ]
+      products: [],
+      loading: true
     }
-     
+
   }
+
+  async componentDidMount(){
+
+    const db = getFirestore(app);
+
+    const products = collection(db, 'products');
+    // const Snapshot = await getDocs(products);
+
+    //-> This method you to make query and fetch multiple document from database <- //
+    const q = query(products);
+
+
+    //-> this method will contiously load whole collection from database when changes occur <-//
+    onSnapshot(q, (querySnapshot) =>{
+      const productsList =  querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        data['id'] = doc.id;
+        // console.log(doc.data());
+        return data;
+        
+    });
+    // console.log(productsList)
+    this.setState({
+      products : productsList,
+      loading: false
+    })
+    })
+
+  //-> this method will continosly load the data for single document form database when changes in occur <-//
+
+  //   const unsub = onSnapshot(doc(db, "products",'TPk8EMtpisj2VYDqxPkj'), (doc) => {
+  //     console.log("Current data: ", doc.data());
+  // });
+
+  //-> this method will only call ones when app is loading for the first time.  <-//
+    // const productsList = Snapshot.docs.map(doc => {
+    //   const data = doc.data();
+    //   data['id'] = doc.id;
+    //   return data;
+    // });
+    // this.setState({
+    //   products: productsList,
+    //   loading: false
+    // })
+  }
+
+
   handleIncreaseQuantity = (product) => {
-    console.log('Heyy please inc the qty of ', product);
+
     const { products } = this.state;
     const index = products.indexOf(product);
 
@@ -43,9 +73,11 @@ class App extends React.Component {
     this.setState({
       products
     })
-  }
+
+  };
+
   handleDecreaseQuantity = (product) => {
-    console.log('Heyy please inc the qty of ', product);
+
     const { products } = this.state;
     const index = products.indexOf(product);
 
@@ -58,7 +90,9 @@ class App extends React.Component {
     this.setState({
       products
     })
-  }
+
+  };
+
   handleDeleteProduct = (id) => {
     const { products } = this.state;
 
@@ -67,7 +101,8 @@ class App extends React.Component {
     this.setState({
       products: items
     })
-  }
+
+  };
 
   getCartCount = () => {
     const { products } = this.state;
@@ -87,12 +122,16 @@ class App extends React.Component {
     let cartTotal = 0;
 
     products.map((product) => {
-      cartTotal = cartTotal + product.qty * product.price
-    })
-     return cartTotal;
+      if (product.qty > 0) {
+        cartTotal = cartTotal + product.qty * product.price
+      }
+      return '';
+    });
+
+    return cartTotal;
   }
-  render () {
-    const { products } = this.state;
+  render() {
+    const { products, loading} = this.state;
     return (
       <div className="App">
         <Navbar count={this.getCartCount()} />
@@ -102,7 +141,8 @@ class App extends React.Component {
           onDecreaseQuantity={this.handleDecreaseQuantity}
           onDeleteProduct={this.handleDeleteProduct}
         />
-        <div style={ {padding: 10, fontSize: 20} }>TOTAL: {this.getCartTotal()} </div>
+        {loading && <h1>Loading...</h1> }
+        <div style={{ padding: 10, fontSize: 20 }}>TOTAL: {this.getCartTotal()} </div>
       </div>
     );
   }
