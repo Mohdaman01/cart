@@ -1,10 +1,17 @@
 import React from 'react';
 import Cart from './cart';
 import Navbar from './Navbar';
-import { getFirestore, collection} from 'firebase/firestore';
+import { app } from './index';
+
+//-> you can import all instances by using this method
+import * as firestore from 'firebase/firestore';
+
+//-> or you can import spacific instance by name importind them like this
+// import { getFirestore, collection } from 'firebase/firestore';
 // import {getDocs, doc} from 'firebase/firestore'
-import {onSnapshot, query} from 'firebase/firestore';
-import {app} from './index';
+// import { onSnapshot, query, addDoc } from 'firebase/firestore';
+
+
 
 class App extends React.Component {
 
@@ -15,42 +22,41 @@ class App extends React.Component {
       loading: true
     }
 
+    this.db = firestore.getFirestore(app);
+    this.products = firestore.collection(this.db, 'products');
   }
 
-  async componentDidMount(){
-
-    const db = getFirestore(app);
-
-    const products = collection(db, 'products');
-    // const Snapshot = await getDocs(products);
+  async componentDidMount() {
 
     //-> This method you to make query and fetch multiple document from database <- //
-    const q = query(products);
+    const q = firestore.query(this.products);
 
 
     //-> this method will contiously load whole collection from database when changes occur <-//
-    onSnapshot(q, (querySnapshot) =>{
-      const productsList =  querySnapshot.docs.map((doc) => {
+    firestore.onSnapshot(q, (querySnapshot) => {
+      const productsList = querySnapshot.docs.map((doc) => {
         const data = doc.data();
         data['id'] = doc.id;
-        // console.log(doc.data());
         return data;
-        
-    });
-    // console.log(productsList)
-    this.setState({
-      products : productsList,
-      loading: false
+
+      });
+      
+      this.setState({
+        products: productsList,
+        loading: false
+      })
     })
-    })
 
-  //-> this method will continosly load the data for single document form database when changes in occur <-//
+    //-> this method will continosly load the data for single document form database when changes in occur <-//
 
-  //   const unsub = onSnapshot(doc(db, "products",'TPk8EMtpisj2VYDqxPkj'), (doc) => {
-  //     console.log("Current data: ", doc.data());
-  // });
+    //   const unsub = onSnapshot(doc(db, "products",'TPk8EMtpisj2VYDqxPkj'), (doc) => {
+    //     console.log("Current data: ", doc.data());
+    // });
 
-  //-> this method will only call ones when app is loading for the first time.  <-//
+    
+    //-> this method will only call ones when app is loading for the first time.  <-//
+
+    // const Snapshot = await getDocs(products);
     // const productsList = Snapshot.docs.map(doc => {
     //   const data = doc.data();
     //   data['id'] = doc.id;
@@ -62,21 +68,32 @@ class App extends React.Component {
     // })
   }
 
+  addProduct = async () => {
 
-  handleIncreaseQuantity = (product) => {
+    const docRef = await firestore.addDoc(this.products, {
+      img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9BqA3IvwVoTWdVPwh8W8Y-2fowOTdwFGgxQ&usqp=CAU',
+      price: 5000,
+      qty: 10,
+      title: 'Washing Machine'
+    })
+
+    console.log('added document:', docRef.data);
+  }
+
+  handleIncreaseQuantity =async (product) => {
 
     const { products } = this.state;
     const index = products.indexOf(product);
 
-    products[index].qty += 1;
+    const docRef = firestore.doc(this.db, 'products', products[index].id);
 
-    this.setState({
-      products
+    await firestore.updateDoc(docRef, {
+      qty: products[index].qty + 1
     })
 
   };
 
-  handleDecreaseQuantity = (product) => {
+  handleDecreaseQuantity = async (product) => {
 
     const { products } = this.state;
     const index = products.indexOf(product);
@@ -85,22 +102,26 @@ class App extends React.Component {
       return;
     }
 
-    products[index].qty -= 1;
+    const docRef = firestore.doc(this.db,'products', products[index].id);
 
-    this.setState({
-      products
+    await firestore.updateDoc(docRef,{
+      qty: products[index].qty - 1
     })
 
   };
 
-  handleDeleteProduct = (id) => {
-    const { products } = this.state;
+  handleDeleteProduct = async (id) => {
+    // const { products } = this.state;
 
-    const items = products.filter((item) => item.id !== id); // [{}]
+    const docRef = firestore.doc(this.db, 'products' , id);
 
-    this.setState({
-      products: items
-    })
+    await firestore.deleteDoc(docRef);
+  
+    // const items = products.filter((item) => item.id !== id);
+
+    // this.setState({
+    //   products: items
+    // })
 
   };
 
@@ -131,17 +152,18 @@ class App extends React.Component {
     return cartTotal;
   }
   render() {
-    const { products, loading} = this.state;
+    const { products, loading } = this.state;
     return (
       <div className="App">
         <Navbar count={this.getCartCount()} />
+        {/* <button onClick={()=> this.addProduct()}>add product</button> */}
         <Cart
           products={products}
           onIncreaseQuantity={this.handleIncreaseQuantity}
           onDecreaseQuantity={this.handleDecreaseQuantity}
           onDeleteProduct={this.handleDeleteProduct}
         />
-        {loading && <h1>Loading...</h1> }
+        {loading && <h1>Loading...</h1>}
         <div style={{ padding: 10, fontSize: 20 }}>TOTAL: {this.getCartTotal()} </div>
       </div>
     );
